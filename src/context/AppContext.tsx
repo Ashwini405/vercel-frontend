@@ -1,5 +1,10 @@
 
 
+
+
+
+
+
 // import React, {
 //   createContext,
 //   useContext,
@@ -10,13 +15,14 @@
 // import { useNavigate } from "react-router-dom"
 
 // /* =====================
-//    TYPES
+//     TYPES
 // ===================== */
 
 // interface User {
 //   id: string
 //   name: string
 //   email: string
+//   role: "admin" | "user"
 // }
 
 // interface CartItem {
@@ -56,7 +62,7 @@
 //   setUser: (user: User | null) => void
 
 //   cart: CartItem[]
-//   addToCart: (item: Omit<CartItem, "quantity">, qty: number) => void
+//   addToCart: (product: any) => void
 //   updateCartQuantity: (id: string, qty: number) => void
 //   removeFromCart: (id: string) => void
 //   clearCart: () => void
@@ -89,73 +95,76 @@
 // const AppContext = createContext<AppContextType | undefined>(undefined)
 
 // /* =====================
-//    PROVIDER
+//     PROVIDER
 // ===================== */
 
 // export function AppProvider({ children }: { children: ReactNode }) {
-//   console.log("🔥 AppProvider mounted")
-
 //   const navigate = useNavigate()
 
 //   const [darkMode, setDarkMode] = useState(false)
-//   const [user, setUser] = useState<User | null>(null)
+  
+//   const [user, setUser] = useState<User | null>(() => {
+//     const savedUser = localStorage.getItem("user");
+//     return savedUser ? JSON.parse(savedUser) : null;
+//   })
+
 //   const [cart, setCart] = useState<CartItem[]>([])
+//   const [wishlist, setWishlist] = useState<WishlistItem[]>([])
 
-//   /* ✅ FIXED: Wishlist with persistence */
-//   const [wishlist, setWishlist] = useState<WishlistItem[]>(() => {
-//   const stored = localStorage.getItem("wishlist")
-//   return stored ? JSON.parse(stored) : []
-// })
+//   const [recentlyViewed, setRecentlyViewed] = useState<WishlistItem[]>(() => {
+//     try {
+//       const stored = localStorage.getItem("recent")
+//       return stored ? JSON.parse(stored) : []
+//     } catch {
+//       return []
+//     }
+//   })
 
-//   const [recentlyViewed, setRecentlyViewed] = useState<WishlistItem[]>([])
 //   const [toast, setToast] = useState<Toast | null>(null)
-
-//   const [sortOrder, setSortOrder] =
-//     useState<"default" | "low-high" | "high-low">("default")
+//   const [sortOrder, setSortOrder] = useState<"default" | "low-high" | "high-low">("default")
 //   const [searchQuery, setSearchQuery] = useState("")
 
 //   const [coupons, setCoupons] = useState<Coupon[]>([])
 //   const [couponCode, setCouponCode] = useState<string | null>(null)
 //   const [discountAmount, setDiscountAmount] = useState(0)
 
-//   /* =====================
-//      UI
-//   ===================== */
-
-//   const toggleDarkMode = () => setDarkMode(p => !p)
+//   useEffect(() => {
+//     if (user) {
+//       localStorage.setItem("user", JSON.stringify(user));
+//     } else {
+//       localStorage.removeItem("user");
+//     }
+//   }, [user]);
 
 //   const showToast = (message: string, type: Toast["type"]) => {
 //     setToast({ message, type })
 //     setTimeout(() => setToast(null), 3000)
 //   }
 
+//   const toggleDarkMode = () => setDarkMode(p => !p)
+
 //   /* =====================
-//      CART (UNCHANGED)
+//       CART LOGIC
 //   ===================== */
 
-//   const addToCart = (item: Omit<CartItem, "quantity">, qty: number) => {
+//   const addToCart = (product: any) => {
 //     setCart(prev => {
-//       const existing = prev.find(i => i.id === item.id)
-//       if (existing) {
-//         return prev.map(i =>
-//           i.id === item.id
-//             ? { ...i, quantity: i.quantity + qty }
-//             : i
+//       const exists = prev.find(p => p.id === product.id)
+//       if (exists) {
+//         return prev.map(p =>
+//           p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
 //         )
 //       }
-//       return [...prev, { ...item, quantity: qty }]
+//       return [...prev, { ...product, quantity: 1 }]
 //     })
+//     showToast(`${product.name} added to cart`, "success")
 //   }
 
-//   const updateCartQuantity = (id: string, qty: number) => {
-//     setCart(prev =>
-//       prev.map(i => (i.id === id ? { ...i, quantity: qty } : i))
-//     )
-//   }
+//   const updateCartQuantity = (id: string, qty: number) =>
+//     setCart(prev => prev.map(i => (i.id === id ? { ...i, quantity: qty } : i)))
 
-//   const removeFromCart = (id: string) => {
+//   const removeFromCart = (id: string) =>
 //     setCart(prev => prev.filter(i => i.id !== id))
-//   }
 
 //   const clearCart = () => {
 //     setCart([])
@@ -164,129 +173,108 @@
 //   }
 
 //   /* =====================
-//      COUPONS (UNCHANGED)
+//       COUPONS (UPDATED)
 //   ===================== */
 
 //   const fetchCoupons = async () => {
-//     const res = await fetch("http://localhost:5000/api/coupons")
-//     setCoupons(await res.json())
-//   }
-
-//   // const applyCoupon = async (code: string) => {
-//   //   const total = cart.reduce((s, i) => s + i.price * i.quantity, 0)
-//   //   const res = await fetch("http://localhost:5000/api/coupons/apply", {
-//   //     method: "POST",
-//   //     headers: { "Content-Type": "application/json" },
-//   //     body: JSON.stringify({ code, orderTotal: total })
-//   //   })
-
-//   //   const data = await res.json()
-//   //   if (data.discountAmount) {
-//   //     setCouponCode(code)
-//   //     setDiscountAmount(data.discountAmount)
-//   //     showToast("Coupon applied", "success")
-//   //   } else {
-//   //     showToast(data.error || "Invalid coupon", "error")
-//   //   }
-//   // }
-//   const applyCoupon = async (code: string) => {
-//   const token = localStorage.getItem("token")
-
-//   if (!token) {
-//     showToast("Please login to apply coupon", "error")
-//     return
-//   }
-
-//   const orderTotal = cart.reduce(
-//     (sum, item) => sum + item.price * item.quantity,
-//     0
-//   )
-
-//   if (orderTotal <= 0) {
-//     showToast("Cart is empty", "error")
-//     return
-//   }
-
-//   try {
-//     const res = await fetch("http://localhost:5000/api/coupons/apply", {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//         Authorization: `Bearer ${token}`   // ✅ THIS WAS MISSING
-//       },
-//       body: JSON.stringify({
-//         code: code.trim().toUpperCase(),
-//         orderTotal
-//       })
-//     })
-
-//     const data = await res.json()
-
-//     if (!res.ok) {
-//       throw new Error(data.error || "Invalid coupon")
+//     try {
+//       const res = await fetch("http://localhost:5000/api/coupons")
+//       setCoupons(await res.json())
+//     } catch {
+//       console.log("coupon fetch failed")
 //     }
-
-//     setCouponCode(data.code)
-//     setDiscountAmount(Number(data.discountAmount) || 0)
-
-//     showToast("Coupon applied successfully 🎉", "success")
-//   } catch (err: any) {
-//     console.error("COUPON ERROR:", err)
-//     showToast(err.message || "Coupon failed", "error")
 //   }
-// }
 
+//   const applyCoupon = async (code: string) => {
+//     try {
+//       const token = localStorage.getItem("token")
+      
+//       // ✅ STEP 2: ENSURE cartTotal IS NOT ZERO
+//       const cartTotal = cart.reduce((t, i) => t + i.price * i.quantity, 0)
+//       if (cartTotal <= 0) {
+//         showToast("Cart is empty", "error")
+//         return
+//       }
+
+//       // ✅ CORRECT VERSION (MANDATORY)
+//       const res = await fetch("http://localhost:5000/api/coupons/apply", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Bearer ${token}`
+//         },
+//         body: JSON.stringify({
+//           code: code.trim(), // Trim whitespace
+//           total: cartTotal   // Explicitly passing total
+//         })
+//       })
+
+//       const data = await res.json()
+
+//       if (!res.ok) {
+//         throw new Error(data.message || data.error || "Coupon failed")
+//       }
+
+//       setCouponCode(data.code)
+//       setDiscountAmount(data.discountAmount || data.discount)
+//       showToast("Coupon applied successfully", "success")
+//     } catch (e: any) {
+//       showToast(e.message || "Invalid coupon", "error")
+//     }
+//   }
 
 //   /* =====================
-//      ❤️ WISHLIST (ONLY FIX)
+//       PERSISTENCE & WISHLIST
 //   ===================== */
 
 //   useEffect(() => {
-//     localStorage.setItem("wishlist", JSON.stringify(wishlist))
-//   }, [wishlist])
+//     if (user) {
+//       const stored = localStorage.getItem(`wishlist_${user.id}`)
+//       setWishlist(stored ? JSON.parse(stored) : [])
+//     } else {
+//       setWishlist([])
+//     }
+//   }, [user])
+
+//   useEffect(() => {
+//     if (user) {
+//       localStorage.setItem(`wishlist_${user.id}`, JSON.stringify(wishlist))
+//     }
+//   }, [wishlist, user])
 
 //   const toggleWishlist = (item: WishlistItem) => {
+//     if (!user) {
+//       showToast("Please login to manage your wishlist", "info")
+//       return
+//     }
 //     setWishlist(prev => {
-//       const exists = prev.some(i => i.id === item.id)
-
-//       showToast(
-//         exists ? "Removed from wishlist" : "Added to wishlist",
-//         exists ? "info" : "success"
-//       )
-
-//       return exists
-//         ? prev.filter(i => i.id !== item.id)
-//         : [...prev, item]
+//       const exists = prev.some(p => p.id === item.id)
+//       if (exists) {
+//         showToast("Removed from wishlist 💔", "info")
+//         return prev.filter(p => p.id !== item.id)
+//       }
+//       showToast("Added to wishlist ❤️", "success")
+//       return [...prev, item]
 //     })
 //   }
 
-//   const isInWishlist = (id: string) =>
-//     wishlist.some(i => i.id === id)
+//   const isInWishlist = (id: string) => wishlist.some(p => p.id === id)
 
-//   /* =====================
-//      RECENTLY VIEWED (UNCHANGED)
-//   ===================== */
+//   useEffect(() => {
+//     localStorage.setItem("recent", JSON.stringify(recentlyViewed))
+//   }, [recentlyViewed])
 
 //   const addToRecentlyViewed = (item: WishlistItem) => {
 //     setRecentlyViewed(prev => {
-//       const filtered = prev.filter(i => i.id !== item.id)
+//       const filtered = prev.filter(p => p.id !== item.id)
 //       return [item, ...filtered].slice(0, 8)
 //     })
 //   }
 
-//   /* =====================
-//      CHECKOUT (UNCHANGED)
-//   ===================== */
-
 //   const checkout = async () => {
-//     if (!user) return
 //     clearCart()
 //     navigate("/order-success")
 //   }
-
-//   /* =====================
-//      PROVIDER
-//   ===================== */
 
 //   return (
 //     <AppContext.Provider
@@ -319,21 +307,17 @@
 //         setSearchQuery
 //       }}
 //     >
-      
 //       {children}
 //     </AppContext.Provider>
 //   )
 // }
-
-// /* =====================
-//    HOOK
-// ===================== */
 
 // export function useApp() {
 //   const ctx = useContext(AppContext)
 //   if (!ctx) throw new Error("useApp must be used within AppProvider")
 //   return ctx
 // }
+
 import React, {
   createContext,
   useContext,
@@ -351,6 +335,7 @@ interface User {
   id: string
   name: string
   email: string
+  role: "admin" | "user"
 }
 
 interface CartItem {
@@ -388,9 +373,11 @@ interface AppContextType {
 
   user: User | null
   setUser: (user: User | null) => void
+  // ✅ STEP 3: Update AppContextType
+  login: (email: string, password: string) => Promise<void>
 
   cart: CartItem[]
-  addToCart: (item: Omit<CartItem, "quantity">, qty: number) => void
+  addToCart: (product: any) => void
   updateCartQuantity: (id: string, qty: number) => void
   removeFromCart: (id: string) => void
   clearCart: () => void
@@ -430,64 +417,98 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
 
   const [darkMode, setDarkMode] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
-  const [cart, setCart] = useState<CartItem[]>([])
-
-  /* ❤️ WISHLIST STATE WITH LOCALSTORAGE PERSISTENCE */
-  const [wishlist, setWishlist] = useState<WishlistItem[]>(() => {
-    const stored = localStorage.getItem("wishlist")
-    return stored ? JSON.parse(stored) : []
+  
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
   })
 
-  const [recentlyViewed, setRecentlyViewed] = useState<WishlistItem[]>([])
-  const [toast, setToast] = useState<Toast | null>(null)
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([])
 
-  const [sortOrder, setSortOrder] =
-    useState<"default" | "low-high" | "high-low">("default")
+  const [recentlyViewed, setRecentlyViewed] = useState<WishlistItem[]>(() => {
+    try {
+      const stored = localStorage.getItem("recent")
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+
+  const [toast, setToast] = useState<Toast | null>(null)
+  const [sortOrder, setSortOrder] = useState<"default" | "low-high" | "high-low">("default")
   const [searchQuery, setSearchQuery] = useState("")
 
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [couponCode, setCouponCode] = useState<string | null>(null)
   const [discountAmount, setDiscountAmount] = useState(0)
 
-  /* =====================
-      UI UTILS
-  ===================== */
-
-  const toggleDarkMode = () => setDarkMode(p => !p)
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+    } else {
+      localStorage.removeItem("user");
+    }
+  }, [user]);
 
   const showToast = (message: string, type: Toast["type"]) => {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
   }
 
+  const toggleDarkMode = () => setDarkMode(p => !p)
+
+  /* =====================
+      AUTH (LOGIN) - STEP 1
+  ===================== */
+  const login = async (email: string, password: string) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed")
+      }
+
+      // ✅ SAVE TOKEN WITH EMAIL INSIDE
+      localStorage.setItem("token", data.token)
+      setUser(data.user)
+
+      showToast("Login successful 🎉", "success")
+      navigate("/")
+    } catch (err: any) {
+      showToast(err.message || "Login failed", "error")
+      throw err
+    }
+  }
+
   /* =====================
       CART LOGIC
   ===================== */
 
-  const addToCart = (item: Omit<CartItem, "quantity">, qty: number) => {
+  const addToCart = (product: any) => {
     setCart(prev => {
-      const existing = prev.find(i => i.id === item.id)
-      if (existing) {
-        return prev.map(i =>
-          i.id === item.id ? { ...i, quantity: i.quantity + qty } : i
+      const exists = prev.find(p => p.id === product.id)
+      if (exists) {
+        return prev.map(p =>
+          p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p
         )
       }
-      return [...prev, { ...item, quantity: qty }]
+      return [...prev, { ...product, quantity: 1 }]
     })
-    showToast(`${item.name} added to cart`, "success")
+    showToast(`${product.name} added to cart`, "success")
   }
 
-  const updateCartQuantity = (id: string, qty: number) => {
-    setCart(prev =>
-      prev.map(i => (i.id === id ? { ...i, quantity: qty } : i))
-    )
-  }
+  const updateCartQuantity = (id: string, qty: number) =>
+    setCart(prev => prev.map(i => (i.id === id ? { ...i, quantity: qty } : i)))
 
-  const removeFromCart = (id: string) => {
+  const removeFromCart = (id: string) =>
     setCart(prev => prev.filter(i => i.id !== id))
-    showToast("Item removed from cart", "info")
-  }
 
   const clearCart = () => {
     setCart([])
@@ -496,32 +517,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   /* =====================
-      COUPON LOGIC
+      COUPONS
   ===================== */
 
   const fetchCoupons = async () => {
     try {
       const res = await fetch("http://localhost:5000/api/coupons")
       setCoupons(await res.json())
-    } catch (err) {
-      console.error("Failed to fetch coupons")
+    } catch {
+      console.log("coupon fetch failed")
     }
   }
 
   const applyCoupon = async (code: string) => {
-    const token = localStorage.getItem("token")
-    if (!token) {
-      showToast("Please login to apply coupon", "error")
-      return
-    }
-
-    const orderTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
-    if (orderTotal <= 0) {
-      showToast("Cart is empty", "error")
-      return
-    }
-
     try {
+      const token = localStorage.getItem("token")
+      
+      const cartTotal = cart.reduce((t, i) => t + i.price * i.quantity, 0)
+      if (cartTotal <= 0) {
+        showToast("Cart is empty", "error")
+        return
+      }
+
       const res = await fetch("http://localhost:5000/api/coupons/apply", {
         method: "POST",
         headers: {
@@ -529,64 +546,74 @@ export function AppProvider({ children }: { children: ReactNode }) {
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          code: code.trim().toUpperCase(),
-          orderTotal
+          code: code.trim(),
+          total: cartTotal
         })
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Invalid coupon")
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || "Coupon failed")
+      }
 
       setCouponCode(data.code)
-      setDiscountAmount(Number(data.discountAmount) || 0)
-      showToast("Coupon applied successfully 🎉", "success")
-    } catch (err: any) {
-      showToast(err.message || "Coupon failed", "error")
+      setDiscountAmount(data.discountAmount || data.discount)
+      showToast("Coupon applied successfully", "success")
+    } catch (e: any) {
+      showToast(e.message || "Invalid coupon", "error")
     }
   }
 
   /* =====================
-      ❤️ WISHLIST LOGIC (PERSISTENT)
+      PERSISTENCE & WISHLIST
   ===================== */
 
-  // Save to localStorage whenever wishlist changes
   useEffect(() => {
-    localStorage.setItem("wishlist", JSON.stringify(wishlist))
-  }, [wishlist])
+    if (user) {
+      const stored = localStorage.getItem(`wishlist_${user.id}`)
+      setWishlist(stored ? JSON.parse(stored) : [])
+    } else {
+      setWishlist([])
+    }
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`wishlist_${user.id}`, JSON.stringify(wishlist))
+    }
+  }, [wishlist, user])
 
   const toggleWishlist = (item: WishlistItem) => {
+    if (!user) {
+      showToast("Please login to manage your wishlist", "info")
+      return
+    }
     setWishlist(prev => {
-      const exists = prev.some(i => i.id === item.id)
-      
+      const exists = prev.some(p => p.id === item.id)
       if (exists) {
         showToast("Removed from wishlist 💔", "info")
-        return prev.filter(i => i.id !== item.id)
-      } else {
-        showToast("Added to wishlist ❤️", "success")
-        return [...prev, item]
+        return prev.filter(p => p.id !== item.id)
       }
+      showToast("Added to wishlist ❤️", "success")
+      return [...prev, item]
     })
   }
 
-  const isInWishlist = (id: string) => wishlist.some(i => i.id === id)
+  const isInWishlist = (id: string) => wishlist.some(p => p.id === id)
 
-  /* =====================
-      RECENTLY VIEWED
-  ===================== */
+  useEffect(() => {
+    localStorage.setItem("recent", JSON.stringify(recentlyViewed))
+  }, [recentlyViewed])
 
   const addToRecentlyViewed = (item: WishlistItem) => {
     setRecentlyViewed(prev => {
-      const filtered = prev.filter(i => i.id !== item.id)
+      const filtered = prev.filter(p => p.id !== item.id)
       return [item, ...filtered].slice(0, 8)
     })
   }
 
-  /* =====================
-      CHECKOUT
-  ===================== */
-
   const checkout = async () => {
-    if (!user) return
     clearCart()
     navigate("/order-success")
   }
@@ -598,6 +625,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toggleDarkMode,
         user,
         setUser,
+        login, // ✅ STEP 2: Expose login in Context
         cart,
         addToCart,
         updateCartQuantity,
@@ -627,12 +655,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   )
 }
 
-/* =====================
-    HOOK
-===================== */
-
 export function useApp() {
   const ctx = useContext(AppContext)
   if (!ctx) throw new Error("useApp must be used within AppProvider")
   return ctx
 }
+

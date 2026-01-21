@@ -1,14 +1,34 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+// import { defineConfig } from 'vite'
+// import react from '@vitejs/plugin-react'
+
+// export default defineConfig({
+//   plugins: [
+//     react({
+//       babel: {
+//         plugins: [
+//           ['@react-dev-inspector/babel-plugin']
+          
+//         ]
+        
+//       }
+//     })
+//   ]
+// })
+
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
 
 export default defineConfig({
-  plugins: [
-    react({
-      babel: {
-        plugins: [
-          ['@react-dev-inspector/babel-plugin']
-        ]
+  plugins: [react()],
+  server: {
+    port: 5174,
+    proxy: {
+      "/api": {
+        target: "http://localhost:5000",
+        changeOrigin: true,
+        secure: false
       }
-    })
-  ]
+    }
+  }
 })
+
