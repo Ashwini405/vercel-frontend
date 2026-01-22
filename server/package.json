@@ -2,9 +2,10 @@
   "name": "server",
   "type": "module",
   "scripts": {
-    "start": "tsx index.ts"
+    "start": "tsx index.ts",
+    "build": "tsc"
   },
-  "dependencies": {
+  "dependencies": 
     "@idealane/node-sdk": "latest",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
