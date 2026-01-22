@@ -1,11 +1,18 @@
+
+
 {
+  "engines": {
+  "node": "18.x",
+  "npm": "9.x"
+},
+
   "name": "vercel-frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "npx vite build",
+    "build": "node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview"
   },
   "dependencies": {
